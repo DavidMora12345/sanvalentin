@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sobre Kraft con Solapa y Sello</title>
+  <!-- Fuente romántica para el mensaje -->
+  <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
+  <style>
+    /* Reinicio básico */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden; /* Para evitar scroll */
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #ffeef3; /* Fondo rosado suave */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* Flecha "Ábreme" saltando */
+    .arrow-bounce {
+      position: absolute;
+      top: 8%;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #d6336c;
+      font-weight: bold;
+      text-align: center;
+      cursor: default;
+      z-index: 10;
+      animation: bounce 1s infinite;
+    }
+    @keyframes bounce {
+      0%   { transform: translate(-50%, 0); }
+      50%  { transform: translate(-50%, -10px); }
+      100% { transform: translate(-50%, 0); }
+    }
+
+    /* Fondo para corazones y besos flotantes permanentes */
+    .bg-container {
+      position: absolute;
+      top: 0; 
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+    /* Íconos con animación de balanceo */
+    .bg-icon {
+      position: absolute;
+      font-size: 25px; /* Corazones y besos más pequeños */
+      opacity: 0.9;
+      animation: floatForever var(--duration) ease-in-out infinite alternate;
+    }
+    @keyframes floatForever {
+      0% {
+        transform: translate(0, 0) rotate(0deg);
+      }
+      50% {
+        transform: translate(15px, -5px) rotate(15deg);
+      }
+      100% {
+        transform: translate(0, 0) rotate(0deg);
+      }
+    }
+
+    /* Contenedor principal del sobre con perspectiva 3D */
+    .envelope-container {
+      position: relative;
+      width: 500px;
+      height: 320px;
+      perspective: 1000px;
+      z-index: 2; /* Encima de la flecha y del fondo */
+    }
+    .envelope {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      cursor: pointer;
+    }
+
+    /* Parte fija del sobre (cuerpo kraft) */
+    .envelope-body {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: repeating-linear-gradient(
+        45deg,
+        #d1b38b,
+        #d1b38b 10px,
+        #c5a57c 10px,
+        #c5a57c 20px
+      );
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      z-index: 1;
+      overflow: hidden;
+    }
+    /* Gráfico de las líneas rojas y el sello en la punta */
+    .envelope-graphics {
+      position: absolute;
+      top: 0; 
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none; /* Para no bloquear clic */
+    }
+    /* Al abrir el sobre, se ocultan las líneas rojas (path) y el sello (circle) */
+    .envelope.open .envelope-graphics path,
+    .envelope.open .envelope-graphics circle {
+      display: none;
+    }
+
+    /* Solapa triangular (la "tapita") */
+    .envelope-flap {
+      position: absolute;
+      width: 100%;
+      height: 130px; 
+      top: 0;
+      left: 0;
+      background: repeating-linear-gradient(
+        45deg,
+        #d1b38b,
+        #d1b38b 10px,
+        #c5a57c 10px,
+        #c5a57c 20px
+      );
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      /* La solapa se sujeta por abajo => transform-origin: bottom center */
+      transform-origin: bottom center;
+      transition: transform 1s ease, z-index 1s ease;
+      clip-path: polygon(0 0, 100% 0, 50% 100%);
+      z-index: 3; /* Encima del papel y del cuerpo */
+    }
+    /* Al abrir el sobre, la solapa rota hacia atrás y baja su z-index 
+       para que el mensaje quede visible */
+    .envelope.open .envelope-flap {
+      transform: rotateX(-180deg);
+      z-index: 1;
+    }
+
+    /* Papel interior con mensaje */
+    .paper {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 70%;
+      height: 50%;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      text-align: center;
+
+      opacity: 0;
+      transition: opacity 1s ease 0.5s, transform 1s ease 0.5s;
+      z-index: 2; 
+    }
+    /* Al abrir el sobre, el papel se hace visible */
+    .envelope.open .paper {
+      opacity: 1;
+      transform: translate(-50%, -50%);
+    }
+
+    /* Botón "Púlsame" */
+    #btnRosas {
+      margin-top: 15px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      background: #ff6f9c; /* Rosado */
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    #btnRosas:hover {
+      background: #ff3f7d;
+    }
+
+    /* Flores (rosas rojas) que salen al abrir */
+    .flower {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: radial-gradient(circle, #e60000 0%, #ff4d4d 70%, transparent 80%);
+      border-radius: 50%;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 9;
+    }
+    @keyframes flowerBurst {
+      0% {
+        transform: translate(0, 0) scale(0.5) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(var(--dx), var(--dy)) scale(1.5) rotate(360deg);
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Flecha "Ábreme" saltando -->
+  <div class="arrow-bounce" id="arrowBounce">
+    ¡Ábreme Yos Majadera! <br> ↓
+  </div>
+
+  <!-- Fondo para corazones y besos (no se superponen) -->
+  <div class="bg-container" id="bgContainer"></div>
+
+  <!-- Contenedor principal del sobre -->
+  <div class="envelope-container" id="envelopeContainer">
+    <div class="envelope" id="envelope">
+      
+      <!-- Cuerpo del sobre (parte inferior) -->
+      <div class="envelope-body">
+        <!-- Líneas rojas en V y sello circular en la punta superior -->
+        <svg class="envelope-graphics" viewBox="0 0 500 320" preserveAspectRatio="none">
+          <!-- V roja: de esquinas superiores (0,0) y (500,0) a la punta (250,130) -->
+          <path d="M 0,0 L 250,130 L 500,0"
+                stroke="red" stroke-width="4" fill="none" />
+          <!-- Sello circular en la punta (cx=250, cy=130) -->
+          <circle cx="250" cy="130" r="20" fill="red" />
+        </svg>
+      </div>
+
+      <!-- Solapa triangular arriba (tapita) -->
+      <div class="envelope-flap"></div>
+
+      <!-- Papel interior con mensaje (centrado) -->
+      <div class="paper">
+        <h2>¡Feliz San Valentín!</h2>
+        <p>Gracias por iluminar mi vida con tu amor, eres la novia más guapa del mundo y mi chiquita majadera.</p>
+
+        <!-- Botón que lleva a la página del ramo -->
+        <button id="btnRosas">¡Púlsame!</button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const arrowBounce = document.getElementById('arrowBounce');
+    const envelope = document.getElementById('envelope');
+    const bgContainer = document.getElementById('bgContainer');
+    
+    // Almacenamos la posición (x,y) de cada ícono para evitar superposición
+    let existingIcons = [];
+
+    let heartsInterval = null; // Intervalo para generar corazones/besos continuamente
+
+    // Al hacer clic en el sobre, se abre y se inician las animaciones
+    envelope.addEventListener('click', () => {
+      if (!envelope.classList.contains('open')) {
+        envelope.classList.add('open');
+        // Ocultamos la flecha "Ábreme"
+        arrowBounce.style.display = 'none';
+
+        // Lanzamos las rosas rojas
+        for (let i = 0; i < 40; i++) {
+          setTimeout(createFlower, i * 40);
+        }
+
+        // Aparecen 30 íconos de golpe (un poco menos para evitar saturar)
+        for (let i = 0; i < 30; i++) {
+          createBgIcon();
+        }
+        // Y luego siguen apareciendo cada 800ms
+        heartsInterval = setInterval(() => {
+          createBgIcon();
+        }, 800);
+      }
+    });
+
+    // Manejo del botón "Púlsame" (ir a ramo.html)
+    document.addEventListener('DOMContentLoaded', () => {
+      const btnRosas = document.getElementById('btnRosas');
+      btnRosas.addEventListener('click', (e) => {
+        e.stopPropagation(); // Evitar que haga clic en el sobre
+        window.location.href = 'ramo.html'; // Redirige a la nueva página
+      });
+    });
+
+    // Crea una flor (rosa roja) saliendo desde la mitad del sobre
+    function createFlower() {
+      const flower = document.createElement('div');
+      flower.classList.add('flower');
+      // Posición inicial (zona media del sobre)
+      const startX = 45 + Math.random() * 10; // entre 45% y 55%
+      const startY = 55 + Math.random() * 10; // entre 55% y 65%
+      flower.style.left = startX + '%';
+      flower.style.top = startY + '%';
+
+      // Desplazamiento aleatorio
+      const dx = (Math.random() - 0.5) * 400;
+      const dy = - (50 + Math.random() * 150);
+      flower.style.setProperty('--dx', dx + 'px');
+      flower.style.setProperty('--dy', dy + 'px');
+
+      // Pequeño retardo aleatorio
+      const delay = Math.random() * 0.5;
+      flower.style.animation = `flowerBurst 2s ease-out forwards ${delay}s`;
+
+      // Agregamos la flor al contenedor principal
+      document.getElementById('envelopeContainer').appendChild(flower);
+
+      // Eliminar al finalizar la animación
+      flower.addEventListener('animationend', () => {
+        flower.remove();
+      });
+    }
+
+    // Crea un ícono de corazón o beso con animación de balanceo
+    // y lo posiciona aleatoriamente evitando superposición
+    function createBgIcon() {
+      // Intentamos buscar una posición libre
+      const position = getRandomNonOverlappingPosition();
+      if (!position) return; // si no se encuentra lugar tras varios intentos, no se crea
+
+      // Creamos el elemento
+      const icon = document.createElement('div');
+      icon.classList.add('bg-icon');
+      icon.textContent = Math.random() < 0.5 ? '❤️' : '💋';
+
+      // Asignamos la posición en px
+      icon.style.left = position.x + 'px';
+      icon.style.top = position.y + 'px';
+
+      // Asignamos duración aleatoria a la animación
+      const duration = (3 + Math.random() * 3).toFixed(2); // entre 3s y 6s
+      icon.style.setProperty('--duration', duration + 's');
+
+      // Agregamos al fondo
+      bgContainer.appendChild(icon);
+
+      // Guardamos su posición para no superponer futuros íconos
+      existingIcons.push({ x: position.x, y: position.y });
+    }
+
+    // Genera una posición aleatoria en px que no se superponga con íconos existentes
+    function getRandomNonOverlappingPosition() {
+      const maxAttempts = 30;
+      const minDist = 30; // distancia mínima para no superponer
+      const iconSize = 25; // coincide con font-size
+
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const x = Math.random() * (window.innerWidth - iconSize);
+        const y = Math.random() * (window.innerHeight - iconSize);
+
+        if (checkNoOverlap(x, y, minDist)) {
+          return { x, y };
+        }
+      }
+      // Si no encontramos lugar tras varios intentos, retornamos null
+      return null;
+    }
+
+    // Comprueba que (x, y) esté a más de minDist de cada ícono existente
+    function checkNoOverlap(x, y, minDist) {
+      for (const iconPos of existingIcons) {
+        const dx = iconPos.x - x;
+        const dy = iconPos.y - y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < minDist) {
+          return false;
+        }
+      }
+      return true;
+    }
+  </script>
+</body>
+</html>

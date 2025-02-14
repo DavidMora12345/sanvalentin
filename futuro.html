@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mi Futuro Contigo</title>
+  <style>
+    body {
+      margin: 0;
+      background: #ffeef3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+    #canvasFuturo {
+      background: #fff;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvasFuturo" width="700" height="500"></canvas>
+
+  <script>
+    const canvas = document.getElementById('canvasFuturo');
+    const ctx = canvas.getContext('2d');
+
+    let progress = 0;    // 0 a 1
+    let speed = 0.003;   // velocidad de dibujo
+
+    // Función principal de dibujo/animación
+    function drawScene(t) {
+      // Limpiamos el canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 1) Dibujamos el fondo (cielo, sol con rayos y césped)
+      drawBackground();
+
+      // 2) Título
+      drawTitle();
+
+      // 3) Casa (sentada en el césped)
+      drawHouse(t);
+
+      // 4) Carro (sentado en el césped)
+      drawCar(t);
+
+      // 5) Pareja (hombre y mujer) sentados en el césped
+      drawCouple(t);
+
+      // Continuar la animación hasta t = 1
+      if (t < 1) {
+        requestAnimationFrame(() => drawScene(t + speed));
+      }
+    }
+
+    // Dibuja el cielo azul, el sol con rayos y el césped verde
+    function drawBackground() {
+      // Cielo
+      ctx.fillStyle = "#87CEEB"; // Azul cielo
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Sol (círculo amarillo en la esquina sup. derecha)
+      const sunX = 620;
+      const sunY = 80;
+      const sunR = 40;
+      ctx.beginPath();
+      ctx.arc(sunX, sunY, sunR, 0, 2 * Math.PI);
+      ctx.fillStyle = "yellow";
+      ctx.fill();
+
+      // Rayos del sol
+      ctx.strokeStyle = "yellow";
+      ctx.lineWidth = 3;
+      const rayCount = 8; 
+      for (let i = 0; i < rayCount; i++) {
+        const angle = (2 * Math.PI / rayCount) * i;
+        // Empieza en el borde del sol
+        const startX = sunX + sunR * Math.cos(angle);
+        const startY = sunY + sunR * Math.sin(angle);
+        // Termina más afuera
+        const endX = sunX + (sunR + 20) * Math.cos(angle);
+        const endY = sunY + (sunR + 20) * Math.sin(angle);
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+      }
+
+      // Césped (parte inferior, y=400 a 500)
+      ctx.fillStyle = "#4CAF50";
+      ctx.fillRect(0, 400, canvas.width, 100);
+    }
+
+    // Título principal
+    function drawTitle() {
+      ctx.save();
+      ctx.font = "32px sans-serif";
+      ctx.fillStyle = "#d6336c";
+      ctx.textAlign = "center";
+      ctx.fillText("Mi futuro contigo", canvas.width / 2, 50);
+      ctx.restore();
+    }
+
+    // Casa con animación parcial (base y techo) + puerta y ventanas
+    // Sentada en el césped => baseY=250 (para que el fondo de la casa quede en y=400)
+    function drawHouse(t) {
+      const baseX = 100;
+      const baseY = 250;       // Ajustado para que la base quede en y=400
+      const baseWidth = 150;
+      const baseHeight = 150;
+
+      // Parte construida de la casa (altura parcial)
+      const partialHeight = baseHeight * t;
+
+      ctx.save();
+      // --- BASE de la casa ---
+      ctx.fillStyle = "#ffc107"; // amarillo
+      // Dibujamos la parte de la casa que se “alza” según t
+      ctx.fillRect(
+        baseX,
+        baseY + (baseHeight - partialHeight),
+        baseWidth,
+        partialHeight
+      );
+
+      // --- PUERTA ---
+      const doorHeight = partialHeight * 0.4; // 40% de la parte construida
+      const doorWidth = baseWidth * 0.25;
+      const doorX = baseX + baseWidth * 0.375;
+      const doorY = baseY + (baseHeight - partialHeight) + (partialHeight - doorHeight);
+
+      ctx.fillStyle = "#795548"; // café
+      ctx.fillRect(doorX, doorY, doorWidth, doorHeight);
+
+      // --- VENTANAS ---
+      const windowSize = partialHeight * 0.2; 
+      if (windowSize > 0) {
+        ctx.fillStyle = "#bbdefb"; // azul clarito
+        const w1X = baseX + baseWidth * 0.1;
+        const w1Y = baseY + (baseHeight - partialHeight) + partialHeight * 0.3;
+        ctx.fillRect(w1X, w1Y, windowSize, windowSize);
+
+        const w2X = baseX + baseWidth * 0.65;
+        const w2Y = w1Y;
+        ctx.fillRect(w2X, w2Y, windowSize, windowSize);
+      }
+
+      // --- TECHO ---
+      ctx.beginPath();
+      const roofPeakX = baseX + baseWidth / 2;
+      const roofPeakY = 170; // Ajustado para que el techo quede sobre la casa
+      ctx.moveTo(baseX, baseY + (baseHeight - partialHeight));
+      ctx.lineTo(baseX + baseWidth, baseY + (baseHeight - partialHeight));
+      // Pico del techo
+      ctx.lineTo(
+        roofPeakX,
+        roofPeakY + (baseY - roofPeakY) * (1 - t)
+      );
+      ctx.closePath();
+      ctx.fillStyle = "#ff5722";
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Carro simple con puerta y ventana
+    // Sentado en el césped => la parte inferior del carro en y=400 => y=350 la parte superior
+    function drawCar(t) {
+      // Se anima en X de 250 a 350
+      const startX = 250;
+      const endX = 350; 
+      const currentX = startX + (endX - startX) * t;
+
+      const carY = 350;   // Para que la parte inferior quede en 400 (alto=50)
+
+      ctx.save();
+      // Cuerpo del carro
+      ctx.fillStyle = "#2196f3"; 
+      ctx.fillRect(currentX, carY, 120, 50);
+
+      // Puerta
+      const doorX = currentX + 40;
+      const doorY = carY + 5;
+      const doorW = 30;
+      const doorH = 35;
+      ctx.fillStyle = "#1565c0";
+      ctx.fillRect(doorX, doorY, doorW, doorH);
+
+      // Ventana encima de la puerta
+      ctx.fillStyle = "#bbdefb";
+      const winW = 25;
+      const winH = 15;
+      ctx.fillRect(doorX + 2.5, doorY - 10, winW, winH);
+
+      // Llantas
+      ctx.fillStyle = "#424242"; 
+      ctx.beginPath();
+      // Llantas centradas en la base del carro (carY + 50 = 400)
+      ctx.arc(currentX + 20, carY + 50, 10, 0, Math.PI * 2);
+      ctx.arc(currentX + 100, carY + 50, 10, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    // Dibuja solo dos personas: Hombre (YO) y Mujer (TÚ)
+    // Sentados en el césped => la parte inferior del cuerpo en y=400 => centro en y=370
+    function drawCouple(t) {
+      ctx.save();
+      ctx.globalAlpha = t; 
+
+      // Hombre (x=500, y=370)
+      drawStickFigure(500, 370, "#000", false);
+      // Flecha "YO"
+      drawArrow(480, 330, 500, 350, "#000", "YO");
+
+      // Mujer (x=540, y=370)
+      drawStickFigure(540, 370, "#880e4f", true);
+      // Flecha "TÚ"
+      drawArrow(560, 330, 540, 350, "#880e4f", "TÚ");
+
+      ctx.restore();
+    }
+
+    // Dibuja un muñeco de palitos en (cx, cy).
+    // Si isWoman es true, dibuja una falda en lugar de piernas separadas.
+    // Ajustado para que la "base" del cuerpo quede en y=400, simulando estar sentado en el césped.
+    function drawStickFigure(cx, cy, color, isWoman) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+
+      // Cabeza
+      // (cy - 20) => top of the head
+      ctx.beginPath();
+      ctx.arc(cx, cy - 20, 10, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Cuerpo (del cuello a la cintura)
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - 10);
+      ctx.lineTo(cx, cy + 10);
+      ctx.stroke();
+
+      // Brazos (horizontales a la altura del pecho)
+      ctx.beginPath();
+      ctx.moveTo(cx - 15, cy);
+      ctx.lineTo(cx + 15, cy);
+      ctx.stroke();
+
+      if (!isWoman) {
+        // Hombre: Piernas separadas
+        // De la cintura (cy+10) hasta (cy+30) => base en 400
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + 10);
+        ctx.lineTo(cx - 10, cy + 30);
+        ctx.moveTo(cx, cy + 10);
+        ctx.lineTo(cx + 10, cy + 30);
+        ctx.stroke();
+      } else {
+        // Mujer: Falda (triángulo) desde la cintura
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + 10);      // cintura
+        ctx.lineTo(cx - 12, cy + 30); // pierna izq
+        ctx.lineTo(cx + 12, cy + 30); // pierna der
+        ctx.closePath();
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    // Dibuja una flecha con texto en (x1,y1) apuntando a (x2,y2)
+    function drawArrow(x1, y1, x2, y2, color, label) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 2;
+
+      // Línea principal
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+
+      // Flecha (punta)
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      const arrowSize = 6;
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(
+        x2 - arrowSize * Math.cos(angle - Math.PI / 6),
+        y2 - arrowSize * Math.sin(angle - Math.PI / 6)
+      );
+      ctx.lineTo(
+        x2 - arrowSize * Math.cos(angle + Math.PI / 6),
+        y2 - arrowSize * Math.sin(angle + Math.PI / 6)
+      );
+      ctx.lineTo(x2, y2);
+      ctx.fill();
+
+      // Texto cerca de (x1,y1)
+      ctx.font = "16px sans-serif";
+      ctx.fillText(label, x1 - 10, y1 - 5);
+
+      ctx.restore();
+    }
+
+    // Iniciamos la animación
+    drawScene(progress);
+  </script>
+</body>
+</html>
